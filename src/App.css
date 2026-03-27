@@ -262,32 +262,47 @@ input:focus {
 }
 
 .message-meta {
-  margin-top: 8px;
+  margin-top: 10px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #dfe6ff;
+  background: #f9fbff;
 }
 
 .message-meta small {
   font-size: 12px;
-  color: #5f6e9c;
+  color: #425289;
+  font-weight: 600;
 }
 
-.source-list {
+.document-list {
   margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 6px;
 }
 
-.source-list li {
+.document-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
-  border: 1px solid #d5ddff;
-  border-radius: 100px;
-  padding: 4px 10px;
-  background: #f5f8ff;
-  color: #46558c;
+  border: 1px solid #dbe3ff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #ffffff;
+  color: #37477f;
+}
+
+.document-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #5a74ff;
+  flex: 0 0 auto;
 }
 
 .typing-dots {

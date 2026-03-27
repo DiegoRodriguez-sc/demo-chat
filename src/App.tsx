@@ -40,7 +40,9 @@ const cleanSourceName = (value: string) => {
   const normalized = withoutQuery.replaceAll('\\', '/')
   const basename = normalized.split('/').at(-1) ?? normalized
   const withoutNumericPrefix = basename.replace(/^\d{8,}[-_]/, '')
-  return withoutNumericPrefix.trim()
+  const decoded = decodeURIComponent(withoutNumericPrefix)
+  const withoutExtension = decoded.replace(/\.(pdf|docx?|txt|md)$/i, '')
+  return withoutExtension.replace(/[_-]+/g, ' ').replace(/\s{2,}/g, ' ').trim()
 }
 
 const sourceNameFromUnknown = (source: unknown) => {
@@ -150,6 +152,43 @@ const cleanAssistantMessage = (value: string) => {
     return true
   })
   return filtered.join('\n').trim()
+}
+
+type AssistantResponseProps = {
+  content: string
+}
+
+function AssistantResponse({ content }: AssistantResponseProps) {
+  const [visibleText, setVisibleText] = useState('')
+
+  useEffect(() => {
+    let cursor = 0
+    let timeoutId: number | null = null
+
+    const writeNext = () => {
+      const remaining = content.length - cursor
+      const chunkSize = remaining > 260 ? 8 : remaining > 140 ? 5 : 3
+      cursor = Math.min(content.length, cursor + chunkSize)
+      setVisibleText(content.slice(0, cursor))
+      if (cursor < content.length) {
+        timeoutId = window.setTimeout(writeNext, 16)
+      }
+    }
+
+    timeoutId = window.setTimeout(writeNext, 16)
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [content])
+
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      {visibleText || ' '}
+    </ReactMarkdown>
+  )
 }
 
 function App() {
@@ -290,11 +329,6 @@ function App() {
 
     ws.onopen = () => {
       setConnectionState('connected')
-      addMessage({
-        role: 'assistant',
-        content:
-          'Hola doctor, soy Aidoc. Puedo asistirle con información de diabetes tipo 1 y tipo 2, además de otros temas disponibles en los documentos cargados.',
-      })
     }
 
     ws.onmessage = (event) => {
@@ -457,17 +491,24 @@ function App() {
                       : 'Sistema'}
                 </span>
                 <div className="message-body">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {message.content}
-                  </ReactMarkdown>
+                  {message.role === 'assistant' ? (
+                    <AssistantResponse content={message.content} />
+                  ) : (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {message.content}
+                    </ReactMarkdown>
+                  )}
                 </div>
                 {message.role === 'assistant' ? (
                   <div className="message-meta">
-                    <small>Docs relevantes: {message.relevantDocsCount ?? 0}</small>
+                    <small>Documentos relevantes: {message.relevantDocsCount ?? 0}</small>
                     {message.sourceNames && message.sourceNames.length > 0 ? (
-                      <ul className="source-list">
+                      <ul className="document-list">
                         {message.sourceNames.map((source) => (
-                          <li key={source}>{source}</li>
+                          <li key={source}>
+                            <span className="document-dot"></span>
+                            {source}
+                          </li>
                         ))}
                       </ul>
                     ) : null}
